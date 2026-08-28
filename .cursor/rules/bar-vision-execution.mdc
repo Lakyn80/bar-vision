@@ -1,0 +1,30 @@
+---
+description: Bar Vision execution overlay — mandatory docs, Docker-first, post-verify git commit+push only
+alwaysApply: true
+---
+
+# Bar Vision agent rules
+
+Before any code change, read and obey:
+
+1. `docs/project/UNIVERSAL_EXECUTION_PROTOCOL.md`
+2. `docs/project/BAR_VISION_EXECUTION_MAP_EN.md`
+3. `docs/project/BAR_VISION_SENIOR_EXECUTION_PROMPT.md`
+
+Docker Compose is the authoritative runtime. Host port remains `127.0.0.1:18100` unless audited otherwise. Do not touch unrelated containers/projects.
+
+Never fabricate bottle photos, ground-truth ml, or vision benchmark claims. Never deploy production.
+
+## Git commit and push (authorized after gates)
+
+Do **not** commit/push mid-work or on failed checks.
+
+Only after implementation + regression tests + runtime verification pass:
+
+1. `git status --short`, `git diff --stat`, `git diff`
+2. Stage only intended files (never `.env`, secrets, caches, logs, volumes, private datasets)
+3. Atomic Conventional Commits
+4. `git push` to the **current** branch (no force-push, no branch surgery unless required)
+5. Report: Branch, Commits, hashes, Push result, Remaining uncommitted files
+
+**Push yes. Deploy no.**
