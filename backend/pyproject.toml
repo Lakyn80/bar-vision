@@ -11,12 +11,19 @@ requires-python = ">=3.13,<3.14"
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
-    "pydantic-settings"
+    "pydantic-settings",
+    "email-validator",
+    "sqlalchemy==2.0.52",
+    "asyncpg==0.31.0",
+    "alembic==1.19.1",
+    "PyJWT==2.10.1",
+    "bcrypt==4.3.0"
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "pytest-asyncio",
     "httpx"
 ]
 
@@ -26,3 +33,4 @@ include = ["app*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"
