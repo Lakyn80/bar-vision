@@ -1,18 +1,34 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import {
+  QueryClientProvider,
+} from "@tanstack/react-query";
+import { BrowserRouter } from "react-router";
+import { registerSW } from "virtual:pwa-register";
 
 import App from "./App";
+import { queryClient } from "./app/query-client";
 import "./index.css";
 
 
-const root = document.getElementById("root");
+registerSW({
+  immediate: true,
+});
 
-if (!root) {
+
+const rootElement = document.getElementById("root");
+
+if (!rootElement) {
   throw new Error("Root element not found.");
 }
 
-createRoot(root).render(
+
+createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </QueryClientProvider>
   </StrictMode>,
 );
