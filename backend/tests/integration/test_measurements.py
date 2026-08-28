@@ -144,3 +144,38 @@ async def test_upload_rejects_fake_png_extension(
         },
     )
     assert response.status_code == 400
+
+
+async def test_analyze_measurement_creates_canonical_image(
+    measurement_client,
+) -> None:
+    client = measurement_client["client"]
+    headers = measurement_client["headers"]
+    payload = FIXTURE.read_bytes()
+
+    uploaded = await client.post(
+        "/api/v1/measurements/draft",
+        headers=headers,
+        files={
+            "file": ("rum_test.png", payload, "image/png"),
+        },
+    )
+    assert uploaded.status_code == 201
+    measurement_id = uploaded.json()["id"]
+
+    analyzed = await client.post(
+        f"/api/v1/measurements/{measurement_id}/analyze",
+        headers=headers,
+    )
+    assert analyzed.status_code == 200
+    body = analyzed.json()
+    assert body["status"] == "canonicalized"
+    assert body["vision_version"] == "canonicalization-v1"
+    assert body["canonical_image_key"]
+    assert body["canonical_image_key"].endswith("/canonical.jpg")
+    assert body["debug_image_key"]
+    assert body["debug_image_key"].endswith("/debug.jpg")
+    assert body["alignment_score"] is not None
+    assert 0.0 < body["alignment_score"] <= 1.0
+    assert object_exists(body["canonical_image_key"])
+    assert object_exists(body["debug_image_key"])

@@ -28,6 +28,10 @@ from app.modules.measurements.image_validation import (
 )
 from app.modules.measurements.models import Measurement
 from app.modules.measurements.schemas import MeasurementResponse
+from app.modules.measurements.service import (
+    MeasurementAnalyzeError,
+    analyze_measurement,
+)
 from app.modules.products.models import Product
 from app.modules.users.models import User
 
@@ -136,6 +140,36 @@ async def create_measurement_draft(
     await session.flush()
     await session.refresh(measurement)
     return measurement
+
+
+@router.post(
+    "/{measurement_id}/analyze",
+    response_model=MeasurementResponse,
+)
+async def analyze_measurement_endpoint(
+    measurement_id: UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Measurement:
+    measurement = await session.scalar(
+        select(Measurement).where(
+            Measurement.id == measurement_id,
+            Measurement.created_by == current_user.id,
+        )
+    )
+    if measurement is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Measurement not found.",
+        )
+
+    try:
+        return await analyze_measurement(session, measurement=measurement)
+    except MeasurementAnalyzeError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail=exc.detail,
+        ) from exc
 
 
 @router.get(

@@ -83,6 +83,23 @@ def object_exists(object_key: str) -> bool:
         return False
 
 
+def get_bytes(object_key: str) -> bytes:
+    settings = get_settings()
+    client = get_minio_client()
+
+    try:
+        response = client.get_object(settings.s3_bucket, object_key)
+        try:
+            return response.read()
+        finally:
+            response.close()
+            response.release_conn()
+    except S3Error as exc:
+        raise ObjectStorageError(
+            f"Failed to download object: {exc}"
+        ) from exc
+
+
 async def upload_bytes(
     *,
     object_key: str,
@@ -95,6 +112,10 @@ async def upload_bytes(
         payload=payload,
         content_type=content_type,
     )
+
+
+async def download_bytes(object_key: str) -> bytes:
+    return await asyncio.to_thread(get_bytes, object_key)
 
 
 async def ensure_storage_ready() -> None:
@@ -117,3 +138,11 @@ def build_measurement_original_key(
         f"measurements/{measurement_id}/"
         f"original.{extension}"
     )
+
+
+def build_measurement_canonical_key(*, measurement_id: str) -> str:
+    return f"measurements/{measurement_id}/canonical.jpg"
+
+
+def build_measurement_debug_key(*, measurement_id: str) -> str:
+    return f"measurements/{measurement_id}/debug.jpg"
