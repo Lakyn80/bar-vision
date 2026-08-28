@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.core.storage import ObjectStorageError, ensure_storage_ready
 
 
 configure_logging()
@@ -21,6 +22,14 @@ async def lifespan(app: FastAPI):
         settings.app_name,
         settings.app_version,
     )
+
+    try:
+        await ensure_storage_ready()
+        logger.info("Object storage bucket is ready.")
+    except ObjectStorageError:
+        logger.exception(
+            "Object storage is not ready; continuing startup."
+        )
 
     yield
 

@@ -11,7 +11,7 @@ COPY app ./app
 COPY alembic ./alembic
 COPY scripts ./scripts
 
-RUN pip install --no-cache-dir ".[dev]"
+RUN pip install --no-cache-dir -e ".[dev]"
 
 # Use sh explicitly so Windows bind-mounts (CRLF / missing +x) cannot break startup.
 ENTRYPOINT ["sh", "/app/scripts/entrypoint.sh"]

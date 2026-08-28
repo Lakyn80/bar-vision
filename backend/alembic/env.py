@@ -9,7 +9,13 @@ from app.core.config import get_settings
 from app.core.database import Base
 
 from app.modules.businesses.models import Business
+from app.modules.bottles.models import (
+    BottleInstance,
+    BottleProfile,
+    CalibrationVersion,
+)
 from app.modules.memberships.models import BusinessMembership
+from app.modules.products.models import Product
 from app.modules.users.models import User
 from app.modules.venues.models import Venue
 

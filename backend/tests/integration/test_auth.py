@@ -64,7 +64,12 @@ async def api_client(db_engine: AsyncEngine):
         await session.flush()
 
         async def override_get_db_session():
-            yield session
+            try:
+                yield session
+                await session.flush()
+            except Exception:
+                await session.rollback()
+                raise
 
         from app.core.deps import get_db_session
 

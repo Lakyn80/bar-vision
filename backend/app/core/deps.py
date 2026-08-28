@@ -17,7 +17,12 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 async def get_db_session() -> AsyncGenerator[AsyncSession]:
     async with AsyncSessionFactory() as session:
-        yield session
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
 
 async def get_current_user(
