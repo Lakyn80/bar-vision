@@ -2,6 +2,7 @@ import { Link } from "react-router";
 
 import { CameraOverlay } from "../features/camera/CameraOverlay";
 import { useCamera } from "../features/camera/useCamera";
+import { useFrameGuidance } from "../features/camera/useFrameGuidance";
 
 
 export function CameraPage() {
@@ -15,6 +16,13 @@ export function CameraPage() {
     captureFrame,
     clearCapture,
   } = useCamera();
+
+  const guidance = useFrameGuidance({
+    videoRef,
+    enabled: status === "ready" && !capturedDataUrl,
+  });
+
+  const canCapture = status === "ready" && guidance === "READY";
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-4 bg-zinc-950 p-4 text-white">
@@ -52,6 +60,12 @@ export function CameraPage() {
             className="absolute inset-0 h-full w-full object-cover"
           />
         ) : null}
+
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+          <div className="text-center font-mono text-lg tracking-wide">
+            {capturedDataUrl ? "CAPTURED" : guidance}
+          </div>
+        </div>
       </section>
 
       <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm">
@@ -76,7 +90,7 @@ export function CameraPage() {
         <button
           type="button"
           onClick={captureFrame}
-          disabled={status !== "ready" || Boolean(capturedDataUrl)}
+          disabled={!canCapture || Boolean(capturedDataUrl)}
           className="rounded-xl border border-zinc-700 px-4 py-3 text-sm disabled:opacity-40"
         >
           Capture
