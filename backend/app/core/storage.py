@@ -106,3 +106,14 @@ def build_bottle_profile_reference_key(profile_id: str) -> str:
         f"calibration/{profile_id}/reference/"
         f"{uuid4().hex}.jpg"
     )
+
+
+def build_measurement_original_key(
+    *,
+    measurement_id: str,
+    extension: str,
+) -> str:
+    return (
+        f"measurements/{measurement_id}/"
+        f"original.{extension}"
+    )

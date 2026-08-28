@@ -14,6 +14,7 @@ from app.modules.bottles.models import (
     BottleProfile,
     CalibrationVersion,
 )
+from app.modules.measurements.models import Measurement
 from app.modules.memberships.models import BusinessMembership
 from app.modules.products.models import Product
 from app.modules.users.models import User

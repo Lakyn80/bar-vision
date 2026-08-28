@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link } from "react-router";
 
+import { uploadMeasurementDraftFromDataUrl } from "../api/measurements";
 import { CameraOverlay } from "../features/camera/CameraOverlay";
 import { useCamera } from "../features/camera/useCamera";
 import { useFrameGuidance } from "../features/camera/useFrameGuidance";
@@ -22,7 +24,32 @@ export function CameraPage() {
     enabled: status === "ready" && !capturedDataUrl,
   });
 
+  const [uploadState, setUploadState] = useState<string>("idle");
+  const [uploadDetail, setUploadDetail] = useState<string | null>(null);
+
   const canCapture = status === "ready" && guidance === "READY";
+
+  const onUpload = async () => {
+    if (!capturedDataUrl) {
+      return;
+    }
+
+    setUploadState("uploading");
+    setUploadDetail(null);
+
+    try {
+      const result = await uploadMeasurementDraftFromDataUrl(capturedDataUrl);
+      setUploadState("uploaded");
+      setUploadDetail(
+        `${result.id} · ${result.original_image_key ?? "no-key"}`,
+      );
+    } catch (error) {
+      setUploadState("error");
+      setUploadDetail(
+        error instanceof Error ? error.message : "Upload failed.",
+      );
+    }
+  };
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-4 bg-zinc-950 p-4 text-white">
@@ -30,7 +57,7 @@ export function CameraPage() {
         <div>
           <h1 className="text-2xl font-semibold">Camera</h1>
           <p className="text-sm text-zinc-400">
-            Align the bottle with the outline, then capture.
+            Align the bottle with the outline, then capture and upload.
           </p>
         </div>
 
@@ -71,6 +98,11 @@ export function CameraPage() {
       <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm">
         <div className="text-zinc-500">Status</div>
         <div className="mt-1 font-mono">{status}</div>
+        <div className="mt-3 text-zinc-500">Upload</div>
+        <div className="mt-1 font-mono">{uploadState}</div>
+        {uploadDetail ? (
+          <div className="mt-2 break-all text-zinc-400">{uploadDetail}</div>
+        ) : null}
         {errorMessage ? (
           <div className="mt-2 text-red-400">{errorMessage}</div>
         ) : null}
@@ -98,7 +130,22 @@ export function CameraPage() {
 
         <button
           type="button"
-          onClick={clearCapture}
+          onClick={() => {
+            void onUpload();
+          }}
+          disabled={!capturedDataUrl || uploadState === "uploading"}
+          className="rounded-xl border border-zinc-700 px-4 py-3 text-sm disabled:opacity-40"
+        >
+          Upload draft
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            clearCapture();
+            setUploadState("idle");
+            setUploadDetail(null);
+          }}
           disabled={!capturedDataUrl}
           className="rounded-xl border border-zinc-700 px-4 py-3 text-sm disabled:opacity-40"
         >

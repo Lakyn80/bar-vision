@@ -16,6 +16,10 @@ dist/
 dev-dist/
 .vite/
 
+# Local scratch captures kept out of git; fixtures live under tests/fixtures.
+backend/rum_test.png
+backend/rum_test.jpg
+
 *.log
 .DS_Store
 Thumbs.db

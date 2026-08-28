@@ -12,7 +12,7 @@ def test_alembic_heads_are_linear() -> None:
     heads = script.get_heads()
 
     assert len(heads) == 1
-    assert heads[0] == "0003"
+    assert heads[0] == "0004"
 
 
 async def test_core_tables_exist_after_migration(
