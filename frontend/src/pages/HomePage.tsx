@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router";
 
 import { getHealth } from "../api/health";
 
@@ -39,6 +40,13 @@ export function HomePage() {
             {status}
           </div>
         </div>
+
+        <Link
+          to="/camera"
+          className="mt-8 inline-flex rounded-xl bg-white px-4 py-3 text-sm font-medium text-zinc-950"
+        >
+          Open camera
+        </Link>
       </section>
     </main>
   );
