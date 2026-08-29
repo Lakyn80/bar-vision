@@ -52,47 +52,49 @@ export function CameraPage() {
   };
 
   return (
-    <main className="mx-auto flex h-[100dvh] w-full max-w-lg flex-col gap-2 overflow-hidden bg-zinc-950 p-3 text-white">
+    <main className="mx-auto flex h-[100dvh] w-full max-w-xl flex-col gap-2 bg-zinc-950 p-3 text-white sm:max-w-2xl sm:gap-3 sm:p-4">
       <header className="flex shrink-0 items-center justify-between gap-2">
         <div>
-          <h1 className="text-lg font-semibold">Camera</h1>
-          <p className="text-xs text-zinc-400">
+          <h1 className="text-xl font-semibold sm:text-2xl">Camera</h1>
+          <p className="text-xs text-zinc-400 sm:text-sm">
             Fit the glass in the green outline, then Capture.
           </p>
         </div>
-        <Link to="/" className="text-xs text-zinc-300 underline">
+        <Link to="/" className="text-sm text-zinc-300 underline">
           Home
         </Link>
       </header>
 
-      {/* Hard cap so preview never taller than ~half the viewport */}
-      <section className="relative mx-auto aspect-[3/4] h-[min(48dvh,380px)] w-auto max-w-full shrink-0 overflow-hidden rounded-xl border border-zinc-800 bg-black">
-        <video
-          ref={videoRef}
-          className="absolute inset-0 h-full w-full object-cover"
-          playsInline
-          muted
-          autoPlay
-        />
-
-        <CameraOverlay />
-
-        {capturedDataUrl ? (
-          <img
-            src={capturedDataUrl}
-            alt="Captured glass frame"
+      {/* Fills leftover viewport height; never forces page scroll */}
+      <div className="flex min-h-0 flex-1 items-center justify-center">
+        <section className="relative aspect-[3/4] h-full max-h-full w-auto max-w-full overflow-hidden rounded-xl border border-zinc-800 bg-black">
+          <video
+            ref={videoRef}
             className="absolute inset-0 h-full w-full object-cover"
+            playsInline
+            muted
+            autoPlay
           />
-        ) : null}
 
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-2 py-2">
-          <div className="text-center font-mono text-sm tracking-wide">
-            {capturedDataUrl ? "CAPTURED" : guidance}
+          <CameraOverlay />
+
+          {capturedDataUrl ? (
+            <img
+              src={capturedDataUrl}
+              alt="Captured glass frame"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : null}
+
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-3 py-2.5">
+            <div className="text-center font-mono text-base tracking-wide sm:text-lg">
+              {capturedDataUrl ? "CAPTURED" : guidance}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
-      <div className="shrink-0 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs">
+      <div className="shrink-0 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs sm:text-sm">
         <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono">
           <span>cam:{status}</span>
           <span>guide:{guidance}</span>
@@ -106,13 +108,13 @@ export function CameraPage() {
         ) : null}
       </div>
 
-      <div className="flex shrink-0 flex-wrap gap-2">
+      <div className="flex shrink-0 flex-wrap gap-2 pb-[env(safe-area-inset-bottom)]">
         <button
           type="button"
           onClick={() => {
             void startCamera();
           }}
-          className="rounded-lg bg-white px-3 py-2 text-xs font-medium text-zinc-950"
+          className="rounded-lg bg-white px-3 py-2.5 text-sm font-medium text-zinc-950"
         >
           Open camera
         </button>
@@ -123,8 +125,8 @@ export function CameraPage() {
           disabled={!canCapture || Boolean(capturedDataUrl)}
           className={
             canCapture && !capturedDataUrl
-              ? "rounded-lg bg-emerald-400 px-3 py-2 text-xs font-semibold text-zinc-950"
-              : "rounded-lg border border-zinc-700 px-3 py-2 text-xs disabled:opacity-40"
+              ? "rounded-lg bg-emerald-400 px-3 py-2.5 text-sm font-semibold text-zinc-950"
+              : "rounded-lg border border-zinc-700 px-3 py-2.5 text-sm disabled:opacity-40"
           }
         >
           Capture
@@ -136,7 +138,7 @@ export function CameraPage() {
             void onUpload();
           }}
           disabled={!capturedDataUrl || uploadState === "uploading"}
-          className="rounded-lg border border-zinc-700 px-3 py-2 text-xs disabled:opacity-40"
+          className="rounded-lg border border-zinc-700 px-3 py-2.5 text-sm disabled:opacity-40"
         >
           Upload
         </button>
@@ -149,7 +151,7 @@ export function CameraPage() {
             setUploadDetail(null);
           }}
           disabled={!capturedDataUrl}
-          className="rounded-lg border border-zinc-700 px-3 py-2 text-xs disabled:opacity-40"
+          className="rounded-lg border border-zinc-700 px-3 py-2.5 text-sm disabled:opacity-40"
         >
           Retake
         </button>
@@ -157,7 +159,7 @@ export function CameraPage() {
         <button
           type="button"
           onClick={stopCamera}
-          className="rounded-lg border border-zinc-700 px-3 py-2 text-xs"
+          className="rounded-lg border border-zinc-700 px-3 py-2.5 text-sm"
         >
           Stop
         </button>

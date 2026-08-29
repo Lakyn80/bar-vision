@@ -79,12 +79,12 @@ function estimateVesselInGuide(
   width: number,
   height: number,
 ): { score: number; horizontalBias: number } {
-  const x0 = Math.floor(width * 0.38);
-  const x1 = Math.floor(width * 0.62);
-  const y0 = Math.floor(height * 0.24);
-  const y1 = Math.floor(height * 0.76);
-  const minWidth = Math.max(3, Math.floor(width * 0.06));
-  const maxWidth = Math.floor(width * 0.32);
+  const x0 = Math.floor(width * 0.34);
+  const x1 = Math.floor(width * 0.66);
+  const y0 = Math.floor(height * 0.18);
+  const y1 = Math.floor(height * 0.82);
+  const minWidth = Math.max(4, Math.floor(width * 0.08));
+  const maxWidth = Math.floor(width * 0.38);
   const edgeThreshold = 18;
 
   let matchedRows = 0;
