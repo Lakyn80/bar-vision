@@ -57,7 +57,7 @@ export function CameraPage() {
         <div>
           <h1 className="text-xl font-semibold sm:text-2xl">Camera</h1>
           <p className="text-xs text-zinc-400 sm:text-sm">
-            Generic vessel tracking (any bottle/glass). Calibration ml is separate.
+            Outline = 0.5 L glass (glass_500ml_v1). Align mug + handle, wait for LOCKED.
           </p>
         </div>
         <Link to="/" className="text-sm text-zinc-300 underline">
