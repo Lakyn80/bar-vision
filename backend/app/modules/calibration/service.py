@@ -25,9 +25,15 @@ from app.modules.calibration.schemas import (
     CalibrationDatasetPayload,
     CalibrationVersionCreate,
     CalibrationVersionUpdate,
+    VolumeEvaluateResponse,
 )
 from app.modules.memberships.models import BusinessMembership
 from app.modules.products.models import Product
+from app.vision.calibration.engine import (
+    CalibrationEngineError,
+    points_from_calibration_json,
+    volume_from_level,
+)
 
 
 class CalibrationServiceError(Exception):
@@ -102,11 +108,13 @@ def _dataset_to_storage_json(
         "vessel": dataset.vessel,
         "nominal_volume_ml": dataset.nominal_volume_ml,
         "step_ml": dataset.step_ml,
+        "interpolation_method": dataset.interpolation_method,
         "notes": dataset.notes,
         "points": [
             {
                 "true_ml": point.true_ml,
                 "image": point.image,
+                "level_normalized": point.level_normalized,
                 "image_key": point.image_key,
                 "capture_metadata": point.capture_metadata,
             }
@@ -126,11 +134,13 @@ def _validated_to_storage_json(
         "vessel": package.vessel,
         "nominal_volume_ml": package.nominal_volume_ml,
         "step_ml": package.step_ml,
+        "interpolation_method": package.interpolation_method,
         "notes": package.notes,
         "points": [
             {
                 "true_ml": point["true_ml"],
                 "image": point["image"],
+                "level_normalized": point.get("level_normalized"),
                 "image_key": uploaded_keys.get(point["image"]),
                 "capture_metadata": point["capture_metadata"],
             }
@@ -343,6 +353,41 @@ async def delete_calibration_version(
     )
     await session.delete(row)
     await session.flush()
+
+
+async def evaluate_volume(
+    session: AsyncSession,
+    *,
+    user_id: UUID,
+    calibration_version_id: UUID,
+    level_normalized: float,
+) -> VolumeEvaluateResponse:
+    row = await get_accessible_calibration_version(
+        session,
+        user_id=user_id,
+        calibration_version_id=calibration_version_id,
+    )
+    try:
+        points, method, nominal = points_from_calibration_json(
+            row.calibration_points_json or {}
+        )
+        estimate = volume_from_level(
+            level_normalized,
+            points=points,
+            method=method,
+            nominal_volume_ml=nominal,
+        )
+    except CalibrationEngineError as exc:
+        raise CalibrationServiceError(exc.detail, status_code=400) from exc
+
+    return VolumeEvaluateResponse(
+        calibration_version_id=row.id,
+        volume_ml=estimate.volume_ml,
+        level_normalized=estimate.level_normalized,
+        method=estimate.method,
+        clamped=estimate.clamped,
+        in_calibration_range=estimate.in_calibration_range,
+    )
 
 
 async def attach_calibration_original(

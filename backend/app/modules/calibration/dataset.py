@@ -21,6 +21,7 @@ class ValidatedCalibrationDataset:
     step_ml: float | None
     notes: str | None
     calibration_method: str | None
+    interpolation_method: str
     raw_dir: Path
     points: list[dict[str, Any]]
 
@@ -132,12 +133,26 @@ def validate_annotation_payload(
                 f"Point {index} capture_metadata must be an object."
             )
 
+        level_normalized = point.get("level_normalized")
+        if level_normalized is not None:
+            try:
+                level_normalized = float(level_normalized)
+            except (TypeError, ValueError) as exc:
+                raise DatasetValidationError(
+                    f"Point {index} has invalid level_normalized."
+                ) from exc
+            if not 0.0 <= level_normalized <= 1.0:
+                raise DatasetValidationError(
+                    f"Point {index} level_normalized out of range."
+                )
+
         seen_images.add(image)
         seen_ml.add(true_ml)
         normalized_points.append(
             {
                 "true_ml": true_ml,
                 "image": image,
+                "level_normalized": level_normalized,
                 "capture_metadata": metadata,
                 "absolute_path": str(image_path),
             }
@@ -161,6 +176,9 @@ def validate_annotation_payload(
         ),
         notes=payload.get("notes"),
         calibration_method=payload.get("calibration_method"),
+        interpolation_method=str(
+            payload.get("interpolation_method") or "pchip"
+        ),
         raw_dir=raw_dir,
         points=normalized_points,
     )
@@ -193,11 +211,16 @@ def validate_manifest(
         "nominal_volume_ml": manifest.get("nominal_volume_ml"),
         "step_ml": manifest.get("step_ml"),
         "notes": manifest.get("notes"),
+        "interpolation_method": manifest.get(
+            "interpolation_method",
+            "pchip",
+        ),
         "raw_dir": str(dataset_dir.relative_to(root)).replace("\\", "/"),
         "points": [
             {
                 "true_ml": item.get("true_ml"),
                 "image": item.get("file"),
+                "level_normalized": item.get("level_normalized"),
                 "capture_metadata": item.get("capture_metadata") or {},
             }
             for item in images

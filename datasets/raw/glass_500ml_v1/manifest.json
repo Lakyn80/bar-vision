@@ -3,15 +3,16 @@
   "vessel": "glass",
   "nominal_volume_ml": 500,
   "step_ml": 62.5,
-  "notes": "No empty (0 ml). Series from 62.5 ml to 500 ml in 62.5 ml steps. Duplicate full capture removed.",
+  "interpolation_method": "cylindrical_linear",
+  "notes": "No empty (0 ml). Series from 62.5 ml to 500 ml in 62.5 ml steps. Cylinder map: ml = level_normalized * 500.",
   "images": [
-    { "file": "0062p5ml_01.jpg", "true_ml": 62.5 },
-    { "file": "0125ml_01.jpg", "true_ml": 125 },
-    { "file": "0187p5ml_01.jpg", "true_ml": 187.5 },
-    { "file": "0250ml_01.jpg", "true_ml": 250 },
-    { "file": "0312p5ml_01.jpg", "true_ml": 312.5 },
-    { "file": "0375ml_01.jpg", "true_ml": 375 },
-    { "file": "0437p5ml_01.jpg", "true_ml": 437.5 },
-    { "file": "0500ml_01.jpg", "true_ml": 500 }
+    { "file": "0062p5ml_01.jpg", "true_ml": 62.5, "level_normalized": 0.125 },
+    { "file": "0125ml_01.jpg", "true_ml": 125, "level_normalized": 0.25 },
+    { "file": "0187p5ml_01.jpg", "true_ml": 187.5, "level_normalized": 0.375 },
+    { "file": "0250ml_01.jpg", "true_ml": 250, "level_normalized": 0.5 },
+    { "file": "0312p5ml_01.jpg", "true_ml": 312.5, "level_normalized": 0.625 },
+    { "file": "0375ml_01.jpg", "true_ml": 375, "level_normalized": 0.75 },
+    { "file": "0437p5ml_01.jpg", "true_ml": 437.5, "level_normalized": 0.875 },
+    { "file": "0500ml_01.jpg", "true_ml": 500, "level_normalized": 1.0 }
   ]
 }

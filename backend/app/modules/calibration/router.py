@@ -19,6 +19,8 @@ from app.modules.calibration.schemas import (
     CalibrationVersionFromDatasetCreate,
     CalibrationVersionResponse,
     CalibrationVersionUpdate,
+    VolumeEvaluateRequest,
+    VolumeEvaluateResponse,
 )
 from app.modules.calibration.service import (
     CalibrationServiceError,
@@ -26,6 +28,7 @@ from app.modules.calibration.service import (
     create_calibration_version,
     create_calibration_version_from_dataset,
     delete_calibration_version,
+    evaluate_volume,
     get_accessible_calibration_version,
     list_calibration_versions,
     update_calibration_version,
@@ -129,6 +132,28 @@ async def get_calibration_version_endpoint(
             session,
             user_id=current_user.id,
             calibration_version_id=calibration_version_id,
+        )
+    except CalibrationServiceError as exc:
+        raise _http_error(exc) from exc
+
+
+@router.post(
+    "/{calibration_version_id}/evaluate-volume",
+    response_model=VolumeEvaluateResponse,
+)
+async def evaluate_volume_endpoint(
+    calibration_version_id: UUID,
+    payload: VolumeEvaluateRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> VolumeEvaluateResponse:
+    """Deterministic level_normalized → ml using this version's curve."""
+    try:
+        return await evaluate_volume(
+            session,
+            user_id=current_user.id,
+            calibration_version_id=calibration_version_id,
+            level_normalized=payload.level_normalized,
         )
     except CalibrationServiceError as exc:
         raise _http_error(exc) from exc

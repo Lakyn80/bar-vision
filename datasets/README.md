@@ -48,5 +48,20 @@ datasets/
 Client production calibrations do **not** live here — they live in DB + MinIO
 per Business → BottleProfile → CalibrationVersion.
 
+## Glass 500 ml cylinder map
+
+`glass_500ml_v1` uses `interpolation_method: cylindrical_linear`:
+
+```text
+volume_ml = level_normalized * 500
+```
+
+So every milliliter is deterministic once liquid height is normalized to the
+0–1 fill range (0 empty → 1 at the 0,5 l mark). Physical 62.5 ml pour photos
+are anchors / regression fixtures, not a requirement for intermediate ml.
+
+Engine code: `backend/app/vision/calibration/engine.py`  
+Evaluate API: `POST /api/v1/calibration-versions/{id}/evaluate-volume`
+
 Raw JPEG binaries may stay local (gitignored). Manifest + annotations are
 versioned in git when useful for the project lab set.

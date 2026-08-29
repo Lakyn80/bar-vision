@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 class CalibrationPointInput(BaseModel):
     true_ml: float = Field(ge=0, le=10_000)
     image: str = Field(min_length=1, max_length=255)
+    level_normalized: float | None = Field(default=None, ge=0, le=1)
     capture_metadata: dict[str, Any] = Field(default_factory=dict)
     image_key: str | None = None
 
@@ -33,6 +34,10 @@ class CalibrationDatasetPayload(BaseModel):
     vessel: str | None = Field(default=None, max_length=100)
     nominal_volume_ml: int | None = Field(default=None, gt=0, le=10_000)
     step_ml: float | None = Field(default=None, gt=0, le=10_000)
+    interpolation_method: str = Field(
+        default="pchip",
+        pattern="^(cylindrical_linear|pchip)$",
+    )
     notes: str | None = None
     points: list[CalibrationPointInput] = Field(min_length=1)
 
@@ -112,3 +117,18 @@ class CalibrationVersionResponse(BaseModel):
     algorithm_version: str
     active: bool
     calibration_points_json: dict[str, Any]
+
+
+class VolumeEvaluateRequest(BaseModel):
+    level_normalized: float = Field(
+        description="0 = empty/bottom, 1 = full mark",
+    )
+
+
+class VolumeEvaluateResponse(BaseModel):
+    calibration_version_id: UUID
+    volume_ml: float
+    level_normalized: float
+    method: str
+    clamped: bool
+    in_calibration_range: bool
