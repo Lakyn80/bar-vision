@@ -22,6 +22,7 @@ dependencies = [
     "minio==7.2.16",
     "numpy==2.2.6",
     "opencv-python-headless==4.11.0.86",
+    "onnxruntime",
     "scipy==1.15.3",
 ]
 
@@ -31,6 +32,23 @@ dev = [
     "pytest-asyncio",
     "httpx"
 ]
+training = [
+    "onnx",
+    "torch",
+    "torchvision"
+]
+training-tools = [
+    "onnx"
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu126" }
+torchvision = { index = "pytorch-cu126" }
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
 
 [tool.setuptools.packages.find]
 where = ["."]

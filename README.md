@@ -39,6 +39,7 @@ http://localhost:18100/api/v1/health
 | minio    | S3-compatible object storage | internal only      |
 
 Backend runs migrations automatically on container start.
+Backend dependencies are resolved with `uv` and locked in `backend/uv.lock`.
 
 ## Tests (inside Docker)
 
