@@ -169,8 +169,10 @@ async def test_analyze_measurement_creates_canonical_image(
     )
     assert analyzed.status_code == 200
     body = analyzed.json()
-    assert body["status"] == "canonicalized"
-    assert body["vision_version"] == "canonicalization-v1"
+    assert body["status"] in {"canonicalized", "leveled"}
+    assert body["vision_version"]
+    assert "canonicalization-v1" in body["vision_version"]
+    assert "liquid-v1" in body["vision_version"]
     assert body["canonical_image_key"]
     assert body["canonical_image_key"].endswith("/canonical.jpg")
     assert body["debug_image_key"]
@@ -179,3 +181,7 @@ async def test_analyze_measurement_creates_canonical_image(
     assert 0.0 < body["alignment_score"] <= 1.0
     assert object_exists(body["canonical_image_key"])
     assert object_exists(body["debug_image_key"])
+    if body["status"] == "leveled":
+        assert body["liquid_level_normalized"] is not None
+        assert 0.0 <= body["liquid_level_normalized"] <= 1.0
+        assert body["level_score"] is not None

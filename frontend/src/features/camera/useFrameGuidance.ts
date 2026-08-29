@@ -7,6 +7,8 @@ import {
 import {
   analyzeFrameQuality,
   type CaptureGuidance,
+  type FrameQualityResult,
+  type VesselBox,
 } from "./frameQuality";
 
 
@@ -16,15 +18,26 @@ type UseFrameGuidanceOptions = {
 };
 
 
+const IDLE: FrameQualityResult = {
+  guidance: "READY",
+  brightness: 0,
+  blurScore: 0,
+  bottleCoverage: 0,
+  horizontalBias: 0,
+  vesselBox: null,
+  locked: false,
+};
+
+
 export function useFrameGuidance({
   videoRef,
   enabled,
-}: UseFrameGuidanceOptions) {
-  const [guidance, setGuidance] = useState<CaptureGuidance>("READY");
+}: UseFrameGuidanceOptions): FrameQualityResult {
+  const [result, setResult] = useState<FrameQualityResult>(IDLE);
 
   useEffect(() => {
     if (!enabled) {
-      setGuidance("READY");
+      setResult(IDLE);
       return;
     }
 
@@ -42,7 +55,8 @@ export function useFrameGuidance({
         return;
       }
 
-      if (timestamp - lastRun >= 250) {
+      // ~20 fps tracking feels like face-lock apps
+      if (timestamp - lastRun >= 50) {
         lastRun = timestamp;
         const video = videoRef.current;
 
@@ -52,7 +66,7 @@ export function useFrameGuidance({
           && video.videoWidth > 0
           && video.videoHeight > 0
         ) {
-          const sampleWidth = 160;
+          const sampleWidth = 180;
           const sampleHeight = Math.max(
             1,
             Math.round(
@@ -69,7 +83,7 @@ export function useFrameGuidance({
             sampleWidth,
             sampleHeight,
           );
-          setGuidance(analyzeFrameQuality(imageData).guidance);
+          setResult(analyzeFrameQuality(imageData));
         }
       }
 
@@ -84,5 +98,8 @@ export function useFrameGuidance({
     };
   }, [enabled, videoRef]);
 
-  return guidance;
+  return result;
 }
+
+
+export type { CaptureGuidance, VesselBox };

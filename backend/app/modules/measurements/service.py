@@ -21,6 +21,10 @@ from app.vision.canonicalization import (
     canonicalize_bottle_image,
     profile_from_bottle_metadata,
 )
+from app.vision.liquid_level import (
+    LiquidLevelError,
+    detect_liquid_level_from_jpeg,
+)
 
 
 class MeasurementAnalyzeError(Exception):
@@ -76,7 +80,33 @@ async def analyze_measurement(
     await _persist_canonical_outputs(measurement, result)
     measurement.status = "canonicalized"
     measurement.alignment_score = result.alignment_score
-    measurement.vision_version = result.vision_version
+    measurement.vision_version = f"{result.vision_version}+liquid-v1"
+
+    roi = None
+    if profile is not None and isinstance(profile.liquid_roi_json, dict):
+        try:
+            roi = (
+                float(profile.liquid_roi_json["x"]),
+                float(profile.liquid_roi_json["y"]),
+                float(profile.liquid_roi_json["width"]),
+                float(profile.liquid_roi_json["height"]),
+            )
+        except (KeyError, TypeError, ValueError):
+            roi = None
+
+    try:
+        level = detect_liquid_level_from_jpeg(
+            result.canonical_jpeg,
+            liquid_roi_norm=roi,
+        )
+        measurement.liquid_level_normalized = level.liquid_level_normalized
+        measurement.level_score = level.level_score
+        measurement.status = "leveled"
+    except LiquidLevelError:
+        # Canonical image is still useful; level may be retried later.
+        measurement.liquid_level_normalized = None
+        measurement.level_score = None
+
     await session.flush()
     await session.refresh(measurement)
     return measurement

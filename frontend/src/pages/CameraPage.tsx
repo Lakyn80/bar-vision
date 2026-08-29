@@ -19,7 +19,7 @@ export function CameraPage() {
     clearCapture,
   } = useCamera();
 
-  const guidance = useFrameGuidance({
+  const frame = useFrameGuidance({
     videoRef,
     enabled: status === "ready" && !capturedDataUrl,
   });
@@ -57,7 +57,7 @@ export function CameraPage() {
         <div>
           <h1 className="text-xl font-semibold sm:text-2xl">Camera</h1>
           <p className="text-xs text-zinc-400 sm:text-sm">
-            Fit the glass in the green outline, then Capture.
+            Hold the glass in view — outline tracks it and turns green when locked.
           </p>
         </div>
         <Link to="/" className="text-sm text-zinc-300 underline">
@@ -65,7 +65,6 @@ export function CameraPage() {
         </Link>
       </header>
 
-      {/* Fills leftover viewport height; never forces page scroll */}
       <div className="flex min-h-0 flex-1 items-center justify-center">
         <section className="relative aspect-[3/4] h-full max-h-full w-auto max-w-full overflow-hidden rounded-xl border border-zinc-800 bg-black">
           <video
@@ -76,7 +75,10 @@ export function CameraPage() {
             autoPlay
           />
 
-          <CameraOverlay />
+          <CameraOverlay
+            vesselBox={frame.vesselBox}
+            locked={frame.locked}
+          />
 
           {capturedDataUrl ? (
             <img
@@ -88,7 +90,11 @@ export function CameraPage() {
 
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-3 py-2.5">
             <div className="text-center font-mono text-base tracking-wide sm:text-lg">
-              {capturedDataUrl ? "CAPTURED" : guidance}
+              {capturedDataUrl
+                ? "CAPTURED"
+                : frame.locked
+                  ? "LOCKED — Capture"
+                  : frame.guidance}
             </div>
           </div>
         </section>
@@ -97,7 +103,8 @@ export function CameraPage() {
       <div className="shrink-0 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs sm:text-sm">
         <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono">
           <span>cam:{status}</span>
-          <span>guide:{guidance}</span>
+          <span>guide:{frame.guidance}</span>
+          <span>lock:{frame.locked ? "yes" : "no"}</span>
           <span>up:{uploadState}</span>
         </div>
         {uploadDetail ? (

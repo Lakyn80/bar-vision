@@ -37,22 +37,22 @@ describe("analyzeFrameBuffer", () => {
   });
 
   it("asks to move closer when no vessel edges exist", () => {
-    // Bright + slightly textured (not blurry), but no tall vessel walls.
     const data = makeBuffer(80, 80, (x, y) => {
       const n = ((x * 17 + y * 31) % 7) - 3;
       const v = 180 + n;
       return [v, v, v];
     });
-    expect(analyzeFrameBuffer(data, 80, 80).guidance).toBe("MOVE CLOSER");
+    const result = analyzeFrameBuffer(data, 80, 80);
+    expect(result.guidance).toBe("MOVE CLOSER");
+    expect(result.vesselBox).toBeNull();
+    expect(result.locked).toBe(false);
   });
 
-  it("reaches READY when a tall vessel silhouette is centered", () => {
+  it("locks and returns a tracked box when vessel is centered", () => {
     const data = makeBuffer(100, 120, (x, y) => {
-      // Bright background
       if (x < 42 || x > 58) {
         return [220, 220, 220];
       }
-      // Darker glass body with hard left/right walls inside compact guide
       if (x === 42 || x === 58) {
         return [20, 20, 20];
       }
@@ -62,7 +62,9 @@ describe("analyzeFrameBuffer", () => {
       return [220, 220, 220];
     });
     const result = analyzeFrameBuffer(data, 100, 120);
-    expect(result.bottleCoverage).toBeGreaterThan(0.30);
+    expect(result.vesselBox).not.toBeNull();
+    expect(result.bottleCoverage).toBeGreaterThan(0.25);
+    expect(result.locked).toBe(true);
     expect(result.guidance).toBe("READY");
   });
 });

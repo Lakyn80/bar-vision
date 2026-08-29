@@ -13,6 +13,9 @@ class MeasurementResponse(BaseModel):
     canonical_image_key: str | None = None
     debug_image_key: str | None = None
     alignment_score: float | None = None
+    liquid_level_normalized: float | None = None
+    level_score: float | None = None
+    volume_ml: int | None = None
     vision_version: str | None = None
     bottle_profile_id: UUID | None
     product_id: UUID | None

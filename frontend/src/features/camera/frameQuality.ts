@@ -8,14 +8,27 @@ export type CaptureGuidance =
   | "CENTER IT";
 
 
+/** Normalized vessel box in the preview (0–1). */
+export type VesselBox = {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+};
+
+
 export type FrameQualityResult = {
   guidance: CaptureGuidance;
   brightness: number;
   blurScore: number;
-  /** 0–1 how strongly a tall vessel silhouette is in the guide box. */
+  /** 0–1 how strongly a tall vessel silhouette is detected. */
   bottleCoverage: number;
   /** -1 left … 0 center … +1 right */
   horizontalBias: number;
+  /** Live tracked vessel box, or null if not found. */
+  vesselBox: VesselBox | null;
+  /** True when pose is good enough to lock (face-app style). */
+  locked: boolean;
 };
 
 
@@ -70,42 +83,48 @@ function laplacianVariance(
 }
 
 
+type VesselEstimate = {
+  score: number;
+  horizontalBias: number;
+  box: VesselBox | null;
+};
+
+
 /**
- * Detect a tall clear/opaque vessel by left+right vertical edges inside the
- * guide box. Mid-luma "coverage" fails on transparent glass; edge pairs work.
+ * Track a tall vessel by left+right vertical edges (works on clear glass).
+ * Returns a live bounding box for face-app style overlay.
  */
-function estimateVesselInGuide(
+function estimateVessel(
   gray: Float32Array,
   width: number,
   height: number,
-): { score: number; horizontalBias: number } {
-  const x0 = Math.floor(width * 0.34);
-  const x1 = Math.floor(width * 0.66);
-  const y0 = Math.floor(height * 0.18);
-  const y1 = Math.floor(height * 0.82);
-  const minWidth = Math.max(4, Math.floor(width * 0.08));
-  const maxWidth = Math.floor(width * 0.38);
-  const edgeThreshold = 18;
+): VesselEstimate {
+  const searchX0 = Math.floor(width * 0.12);
+  const searchX1 = Math.floor(width * 0.88);
+  const searchY0 = Math.floor(height * 0.08);
+  const searchY1 = Math.floor(height * 0.94);
+  const minWidth = Math.max(4, Math.floor(width * 0.10));
+  const maxWidth = Math.floor(width * 0.55);
+  const edgeThreshold = 16;
 
-  let matchedRows = 0;
-  let sampledRows = 0;
+  const leftXs: number[] = [];
+  const rightXs: number[] = [];
+  const rowYs: number[] = [];
   let biasSum = 0;
 
-  for (let y = y0; y < y1; y += 2) {
-    sampledRows += 1;
+  for (let y = searchY0; y < searchY1; y += 2) {
     let bestLeft = -1;
     let bestLeftMag = 0;
     let bestRight = -1;
     let bestRightMag = 0;
-
     const row = y * width;
-    for (let x = x0 + 1; x < x1 - 1; x += 1) {
+    const mid = (searchX0 + searchX1) / 2;
+
+    for (let x = searchX0 + 1; x < searchX1 - 1; x += 1) {
       const mag = Math.abs(gray[row + x + 1] - gray[row + x - 1]);
       if (mag < edgeThreshold) {
         continue;
       }
-      // Prefer outer walls: left edge near left half, right near right half.
-      const mid = (x0 + x1) / 2;
       if (x <= mid && mag > bestLeftMag) {
         bestLeftMag = mag;
         bestLeft = x;
@@ -124,20 +143,42 @@ function estimateVesselInGuide(
       continue;
     }
 
-    matchedRows += 1;
+    leftXs.push(bestLeft);
+    rightXs.push(bestRight);
+    rowYs.push(y);
     const center = (bestLeft + bestRight) / 2;
-    const guideCenter = (x0 + x1) / 2;
-    const half = (x1 - x0) / 2;
-    biasSum += (center - guideCenter) / half;
+    biasSum += (center - width / 2) / (width / 2);
   }
 
-  if (sampledRows === 0) {
-    return { score: 0, horizontalBias: 0 };
+  const sampledRows = Math.max(1, Math.ceil((searchY1 - searchY0) / 2));
+  const score = leftXs.length / sampledRows;
+
+  if (leftXs.length < 6) {
+    return { score, horizontalBias: 0, box: null };
   }
+
+  const median = (values: number[]): number => {
+    const sorted = [...values].sort((a, b) => a - b);
+    return sorted[Math.floor(sorted.length / 2)];
+  };
+
+  const left = median(leftXs) / width;
+  const right = median(rightXs) / width;
+  const top = rowYs[0] / height;
+  const bottom = rowYs[rowYs.length - 1] / height;
+  // Slight padding so outline hugs the glass.
+  const padX = 0.012;
+  const padY = 0.02;
 
   return {
-    score: matchedRows / sampledRows,
-    horizontalBias: matchedRows === 0 ? 0 : biasSum / matchedRows,
+    score,
+    horizontalBias: biasSum / leftXs.length,
+    box: {
+      left: Math.max(0, left - padX),
+      right: Math.min(1, right + padX),
+      top: Math.max(0, top - padY),
+      bottom: Math.min(1, bottom + padY),
+    },
   };
 }
 
@@ -150,7 +191,7 @@ export function analyzeFrameBuffer(
   const gray = toGray(data, width, height);
   const brightness = averageBrightness(gray);
   const blurScore = laplacianVariance(gray, width, height);
-  const vessel = estimateVesselInGuide(gray, width, height);
+  const vessel = estimateVessel(gray, width, height);
 
   let guidance: CaptureGuidance = "READY";
 
@@ -158,15 +199,17 @@ export function analyzeFrameBuffer(
     guidance = "LOW LIGHT";
   } else if (blurScore < 14) {
     guidance = "TOO BLURRY";
-  } else if (vessel.score < 0.22) {
+  } else if (vessel.score < 0.18 || !vessel.box) {
     guidance = "MOVE CLOSER";
   } else if (vessel.horizontalBias < -0.28) {
     guidance = "MOVE RIGHT";
   } else if (vessel.horizontalBias > 0.28) {
     guidance = "MOVE LEFT";
-  } else if (vessel.score < 0.38) {
+  } else if (vessel.score < 0.32) {
     guidance = "CENTER IT";
   }
+
+  const locked = guidance === "READY" && vessel.box !== null;
 
   return {
     guidance,
@@ -174,6 +217,8 @@ export function analyzeFrameBuffer(
     blurScore,
     bottleCoverage: vessel.score,
     horizontalBias: vessel.horizontalBias,
+    vesselBox: vessel.box,
+    locked,
   };
 }
 
