@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import lru_cache
 from uuid import UUID
 
 from sqlalchemy import select
@@ -13,8 +14,17 @@ from app.core.storage import (
     object_exists,
     upload_bytes,
 )
+from app.core.config import get_settings
 from app.modules.bottles.models import BottleProfile
 from app.modules.measurements.models import Measurement
+from app.vision.glass_profile import (
+    GLASS_500ML_PROFILE_KEY,
+    GlassProfileGeometryConfig,
+    GlassProfileInferenceError,
+    GlassProfileInferenceUnavailable,
+    OnnxGlassProfileDetector,
+    validate_profile_geometry,
+)
 from app.vision.canonicalization import (
     CanonicalizationError,
     CanonicalizationResult,
@@ -56,6 +66,9 @@ async def analyze_measurement(
         ) from exc
 
     profile = await _load_profile(session, measurement.bottle_profile_id)
+    if _requires_glass_profile_gate(profile):
+        _validate_glass_profile_gate(original_payload)
+
     try:
         if profile is not None:
             spec = profile_from_bottle_metadata(
@@ -110,6 +123,60 @@ async def analyze_measurement(
     await session.flush()
     await session.refresh(measurement)
     return measurement
+
+
+def _requires_glass_profile_gate(profile: BottleProfile | None) -> bool:
+    if profile is None:
+        return False
+    return profile.version == GLASS_500ML_PROFILE_KEY
+
+
+def _validate_glass_profile_gate(payload: bytes) -> None:
+    settings = get_settings()
+    if not settings.glass_profile_gate_enabled:
+        raise MeasurementAnalyzeError(
+            "glass_500ml_v1 profile gate is disabled; calibrated measurement is blocked.",
+            status_code=503,
+        )
+
+    try:
+        detector = _build_glass_profile_detector(
+            settings.glass_profile_onnx_path,
+            settings.glass_profile_metadata_path,
+        )
+        detection = detector.detect(payload)
+        validation = validate_profile_geometry(
+            detection,
+            config=GlassProfileGeometryConfig.from_metadata(detector.metadata),
+        )
+    except GlassProfileInferenceUnavailable as exc:
+        raise MeasurementAnalyzeError(
+            f"glass_500ml_v1 ONNX profile model is unavailable: {exc.detail}",
+            status_code=503,
+        ) from exc
+    except GlassProfileInferenceError as exc:
+        raise MeasurementAnalyzeError(
+            f"glass_500ml_v1 ONNX profile inference failed: {exc.detail}",
+            status_code=422,
+        ) from exc
+
+    if not validation.ready:
+        reasons = ", ".join(validation.reasons) or "not_ready"
+        raise MeasurementAnalyzeError(
+            f"glass_500ml_v1 profile gate rejected frame: {reasons}",
+            status_code=422,
+        )
+
+
+@lru_cache(maxsize=4)
+def _build_glass_profile_detector(
+    model_path: str | None,
+    metadata_path: str | None,
+) -> OnnxGlassProfileDetector:
+    return OnnxGlassProfileDetector(
+        model_path=model_path,
+        metadata_path=metadata_path,
+    )
 
 
 async def _load_profile(

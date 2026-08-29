@@ -65,3 +65,40 @@ Evaluate API: `POST /api/v1/calibration-versions/{id}/evaluate-volume`
 
 Raw JPEG binaries may stay local (gitignored). Manifest + annotations are
 versioned in git when useful for the project lab set.
+
+## Glass profile ML annotations
+
+`glass_500ml_v1` now has a required PyTorch/ONNX profile-recognition path.
+The current `annotations/glass_500ml_v1/v1.json` file is calibration-only and
+is not sufficient for supervised fine-tuning.
+
+Use this schema for geometry-aware training data:
+
+```text
+datasets/annotations/glass_500ml_v1/annotation_schema_v2.json
+```
+
+Positive samples must contain portable relative image paths, normalized bbox,
+mask, and these landmarks:
+
+```text
+rim_left
+rim_right
+bottom_left
+bottom_right
+rim_center
+bottom_center
+```
+
+Negative samples are mandatory: no glass, wrong glass, cup, bottle, background
+object, cropped/partial glass, bad rotation, bad perspective, too far, and too
+close. Future datasets must include `capture_session_id` so train/validation/test
+splits can be session-safe.
+
+Current split metadata is in:
+
+```text
+datasets/splits/glass_500ml_v1/v1.json
+```
+
+It is deterministic but not leakage-certified because v1 lacks session ids.

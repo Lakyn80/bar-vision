@@ -1,0 +1,31 @@
+{
+  "model_version": "glass-profile-v1.0.0-dev",
+  "profile_key": "glass_500ml_v1",
+  "dataset_annotation": "annotations/glass_500ml_v1/v1.json",
+  "output_dir": "models/glass_profile/glass_500ml_v1",
+  "architecture": "mobilenet_v3_small_multitask_geometry",
+  "input_width": 512,
+  "input_height": 512,
+  "mask_size": 64,
+  "batch_size": 2,
+  "gradient_accumulation_steps": 1,
+  "learning_rate": 0.0001,
+  "optimizer": "adamw",
+  "weight_decay": 0.0001,
+  "epochs": 20,
+  "scheduler": "cosine",
+  "random_seed": 20260829,
+  "pretrained_checkpoint": "torchvision.mobilenet_v3_small.IMAGENET1K_V1",
+  "pretrained_backbone": true,
+  "freeze_backbone_epochs": 1,
+  "amp": true,
+  "require_cuda": true,
+  "train_split_version": "glass_500ml_v1-v1-seed-20260829",
+  "allow_bbox_mask_fallback": false,
+  "augmentation": {
+    "brightness": 0.12,
+    "contrast": 0.12,
+    "blur_probability": 0.1,
+    "noise_std": 0.015
+  }
+}

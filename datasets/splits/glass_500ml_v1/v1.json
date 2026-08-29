@@ -1,0 +1,27 @@
+{
+  "dataset_id": "glass_500ml_v1",
+  "dataset_version": "v1",
+  "split_version": "glass_500ml_v1-v1-seed-20260829",
+  "seed": 20260829,
+  "strategy": "deterministic hash by split_group; capture_session_id should be used as split_group when frames share a capture session",
+  "train": [
+    "0062p5ml_01.jpg",
+    "0125ml_01.jpg",
+    "0250ml_01.jpg",
+    "0312p5ml_01.jpg",
+    "0375ml_01.jpg",
+    "0437p5ml_01.jpg"
+  ],
+  "validation": [
+    "0187p5ml_01.jpg"
+  ],
+  "test": [
+    "0500ml_01.jpg"
+  ],
+  "warnings": [
+    "capture_session_id missing for 8 samples; split_group fell back to image filename",
+    "current v1 is a calibration-only positive dataset without negative samples",
+    "current v1 lacks bbox, mask, and keypoint annotations required for supervised profile fine-tuning",
+    "session-level leakage safety cannot be verified until capture_session_id is present"
+  ]
+}

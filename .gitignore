@@ -27,6 +27,15 @@ datasets/raw/**/*.png
 datasets/raw/**/*.webp
 !datasets/raw/**/manifest.json
 
+# Trained model artifacts and checkpoints are versioned through metadata,
+# not committed as large binaries.
+models/
+backend/models/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
 *.log
 .DS_Store
 Thumbs.db

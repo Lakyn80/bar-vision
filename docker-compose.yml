@@ -55,10 +55,14 @@ services:
       S3_BUCKET: ${S3_BUCKET}
       S3_REGION: ${S3_REGION}
       DATASETS_ROOT: /datasets
+      GLASS_PROFILE_GATE_ENABLED: ${GLASS_PROFILE_GATE_ENABLED:-true}
+      GLASS_PROFILE_ONNX_PATH: ${GLASS_PROFILE_ONNX_PATH:-/models/glass_profile/glass_500ml_v1.onnx}
+      GLASS_PROFILE_METADATA_PATH: ${GLASS_PROFILE_METADATA_PATH:-/models/glass_profile/glass_500ml_v1.metadata.json}
 
     volumes:
       - ./backend:/app
       - ./datasets:/datasets:ro
+      - ./models:/models:ro
 
     depends_on:
       postgres:

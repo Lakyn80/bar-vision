@@ -32,6 +32,19 @@ class Settings(BaseSettings):
         validation_alias="DATASETS_ROOT",
     )
 
+    glass_profile_gate_enabled: bool = Field(
+        default=True,
+        validation_alias="GLASS_PROFILE_GATE_ENABLED",
+    )
+    glass_profile_onnx_path: str | None = Field(
+        default=None,
+        validation_alias="GLASS_PROFILE_ONNX_PATH",
+    )
+    glass_profile_metadata_path: str | None = Field(
+        default=None,
+        validation_alias="GLASS_PROFILE_METADATA_PATH",
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

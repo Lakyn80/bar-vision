@@ -1,0 +1,23 @@
+FROM pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+ENV PYTHONPATH="/app"
+
+WORKDIR /app
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+COPY pyproject.toml uv.lock alembic.ini ./
+RUN uv pip install --system --break-system-packages \
+    numpy==2.2.6 \
+    opencv-python-headless==4.11.0.86 \
+    onnx==1.22.0 \
+    onnxruntime==1.29.0
+
+COPY app ./app
+
+CMD ["python", "-m", "app.vision.glass_profile.train", "--datasets-root", "/datasets"]
