@@ -59,7 +59,7 @@ export function CameraPage() {
         <div>
           <h1 className="text-2xl font-semibold">Camera</h1>
           <p className="text-sm text-zinc-400">
-            Align the bottle with the outline, then capture and upload.
+            Put the glass inside the green outline, then Capture.
           </p>
         </div>
 
@@ -74,7 +74,7 @@ export function CameraPage() {
       <section className="relative aspect-[3/4] overflow-hidden rounded-2xl border border-zinc-800 bg-black">
         <video
           ref={videoRef}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain"
           playsInline
           muted
           autoPlay
@@ -85,20 +85,20 @@ export function CameraPage() {
         {capturedDataUrl ? (
           <img
             src={capturedDataUrl}
-            alt="Captured bottle frame"
-            className="absolute inset-0 h-full w-full object-cover"
+            alt="Captured glass frame"
+            className="absolute inset-0 h-full w-full object-contain bg-black"
           />
         ) : null}
 
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-4">
           <div className="text-center font-mono text-lg tracking-wide">
             {capturedDataUrl ? "CAPTURED" : guidance}
           </div>
-          {!capturedDataUrl && status === "ready" && guidance !== "READY" ? (
-            <div className="mt-1 text-center text-xs text-amber-300">
-              Guidance is a hint — you can still Capture.
-            </div>
-          ) : null}
+          <div className="mt-1 text-center text-xs text-zinc-300">
+            {capturedDataUrl
+              ? "Use Upload draft or Retake."
+              : "Green outline = target. Capture works even if guidance is not READY."}
+          </div>
         </div>
       </section>
 

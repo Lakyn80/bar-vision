@@ -3,43 +3,49 @@ export type CaptureGuidance =
   | "LOW LIGHT"
   | "TOO BLURRY"
   | "MOVE CLOSER"
+  | "MOVE LEFT"
   | "MOVE RIGHT"
-  | "STRAIGHTEN";
+  | "CENTER IT";
 
 
 export type FrameQualityResult = {
   guidance: CaptureGuidance;
   brightness: number;
   blurScore: number;
+  /** 0–1 how strongly a tall vessel silhouette is in the guide box. */
   bottleCoverage: number;
+  /** -1 left … 0 center … +1 right */
+  horizontalBias: number;
 };
 
 
-function averageBrightness(
+function toGray(
   data: Uint8ClampedArray,
-): number {
-  let total = 0;
-  const pixels = data.length / 4;
-
-  for (let i = 0; i < data.length; i += 4) {
-    total += (data[i] + data[i + 1] + data[i + 2]) / 3;
+  width: number,
+  height: number,
+): Float32Array {
+  const gray = new Float32Array(width * height);
+  for (let i = 0, p = 0; i < data.length; i += 4, p += 1) {
+    gray[p] = (data[i] + data[i + 1] + data[i + 2]) / 3;
   }
+  return gray;
+}
 
-  return total / pixels;
+
+function averageBrightness(gray: Float32Array): number {
+  let total = 0;
+  for (let i = 0; i < gray.length; i += 1) {
+    total += gray[i];
+  }
+  return total / gray.length;
 }
 
 
 function laplacianVariance(
-  data: Uint8ClampedArray,
+  gray: Float32Array,
   width: number,
   height: number,
 ): number {
-  const gray = new Float32Array(width * height);
-
-  for (let i = 0, p = 0; i < data.length; i += 4, p += 1) {
-    gray[p] = (data[i] + data[i + 1] + data[i + 2]) / 3;
-  }
-
   let sum = 0;
   let sumSq = 0;
   let count = 0;
@@ -53,7 +59,6 @@ function laplacianVariance(
         + gray[i + 1]
         + gray[i - width]
         + gray[i + width];
-
       sum += value;
       sumSq += value * value;
       count += 1;
@@ -65,31 +70,75 @@ function laplacianVariance(
 }
 
 
-function estimateBottleCoverage(
-  data: Uint8ClampedArray,
+/**
+ * Detect a tall clear/opaque vessel by left+right vertical edges inside the
+ * guide box. Mid-luma "coverage" fails on transparent glass; edge pairs work.
+ */
+function estimateVesselInGuide(
+  gray: Float32Array,
   width: number,
   height: number,
-): number {
-  const x0 = Math.floor(width * 0.36);
-  const x1 = Math.floor(width * 0.64);
-  const y0 = Math.floor(height * 0.12);
-  const y1 = Math.floor(height * 0.88);
+): { score: number; horizontalBias: number } {
+  const x0 = Math.floor(width * 0.34);
+  const x1 = Math.floor(width * 0.66);
+  const y0 = Math.floor(height * 0.16);
+  const y1 = Math.floor(height * 0.84);
+  const minWidth = Math.max(4, Math.floor(width * 0.08));
+  const maxWidth = Math.floor(width * 0.40);
+  const edgeThreshold = 18;
 
-  let edgeLike = 0;
-  let total = 0;
+  let matchedRows = 0;
+  let sampledRows = 0;
+  let biasSum = 0;
 
-  for (let y = y0; y < y1; y += 4) {
-    for (let x = x0; x < x1; x += 4) {
-      const i = (y * width + x) * 4;
-      const luma = (data[i] + data[i + 1] + data[i + 2]) / 3;
-      total += 1;
-      if (luma > 40 && luma < 220) {
-        edgeLike += 1;
+  for (let y = y0; y < y1; y += 2) {
+    sampledRows += 1;
+    let bestLeft = -1;
+    let bestLeftMag = 0;
+    let bestRight = -1;
+    let bestRightMag = 0;
+
+    const row = y * width;
+    for (let x = x0 + 1; x < x1 - 1; x += 1) {
+      const mag = Math.abs(gray[row + x + 1] - gray[row + x - 1]);
+      if (mag < edgeThreshold) {
+        continue;
+      }
+      // Prefer outer walls: left edge near left half, right near right half.
+      const mid = (x0 + x1) / 2;
+      if (x <= mid && mag > bestLeftMag) {
+        bestLeftMag = mag;
+        bestLeft = x;
+      }
+      if (x >= mid && mag > bestRightMag) {
+        bestRightMag = mag;
+        bestRight = x;
       }
     }
+
+    if (bestLeft < 0 || bestRight < 0) {
+      continue;
+    }
+    const vesselWidth = bestRight - bestLeft;
+    if (vesselWidth < minWidth || vesselWidth > maxWidth) {
+      continue;
+    }
+
+    matchedRows += 1;
+    const center = (bestLeft + bestRight) / 2;
+    const guideCenter = (x0 + x1) / 2;
+    const half = (x1 - x0) / 2;
+    biasSum += (center - guideCenter) / half;
   }
 
-  return total === 0 ? 0 : edgeLike / total;
+  if (sampledRows === 0) {
+    return { score: 0, horizontalBias: 0 };
+  }
+
+  return {
+    score: matchedRows / sampledRows,
+    horizontalBias: matchedRows === 0 ? 0 : biasSum / matchedRows,
+  };
 }
 
 
@@ -98,29 +147,33 @@ export function analyzeFrameBuffer(
   width: number,
   height: number,
 ): FrameQualityResult {
-  const brightness = averageBrightness(data);
-  const blurScore = laplacianVariance(data, width, height);
-  const bottleCoverage = estimateBottleCoverage(data, width, height);
+  const gray = toGray(data, width, height);
+  const brightness = averageBrightness(gray);
+  const blurScore = laplacianVariance(gray, width, height);
+  const vessel = estimateVesselInGuide(gray, width, height);
 
   let guidance: CaptureGuidance = "READY";
 
-  // Soft thresholds: guidance is advisory; Capture must stay usable on
-  // desktop webcams and uneven home lighting.
-  if (brightness < 30) {
+  if (brightness < 28) {
     guidance = "LOW LIGHT";
-  } else if (blurScore < 18) {
+  } else if (blurScore < 14) {
     guidance = "TOO BLURRY";
-  } else if (bottleCoverage < 0.10) {
+  } else if (vessel.score < 0.22) {
     guidance = "MOVE CLOSER";
-  } else if (bottleCoverage > 0.92) {
+  } else if (vessel.horizontalBias < -0.28) {
     guidance = "MOVE RIGHT";
+  } else if (vessel.horizontalBias > 0.28) {
+    guidance = "MOVE LEFT";
+  } else if (vessel.score < 0.38) {
+    guidance = "CENTER IT";
   }
 
   return {
     guidance,
     brightness,
     blurScore,
-    bottleCoverage,
+    bottleCoverage: vessel.score,
+    horizontalBias: vessel.horizontalBias,
   };
 }
 
