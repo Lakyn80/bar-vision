@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 
 import { uploadMeasurementDraftFromDataUrl } from "../api/measurements";
+import { canCaptureCalibratedFrame } from "../features/camera/captureGate";
 import { CameraOverlay } from "../features/camera/CameraOverlay";
 import { useCamera } from "../features/camera/useCamera";
 import { useFrameGuidance } from "../features/camera/useFrameGuidance";
@@ -27,7 +28,11 @@ export function CameraPage() {
   const [uploadState, setUploadState] = useState<string>("idle");
   const [uploadDetail, setUploadDetail] = useState<string | null>(null);
 
-  const canCapture = status === "ready";
+  const canCapture = canCaptureCalibratedFrame({
+    status,
+    frame,
+    capturedDataUrl,
+  });
 
   const onUpload = async () => {
     if (!capturedDataUrl) {
@@ -129,9 +134,9 @@ export function CameraPage() {
         <button
           type="button"
           onClick={captureFrame}
-          disabled={!canCapture || Boolean(capturedDataUrl)}
+          disabled={!canCapture}
           className={
-            canCapture && !capturedDataUrl
+            canCapture
               ? "rounded-lg bg-emerald-400 px-3 py-2.5 text-sm font-semibold text-zinc-950"
               : "rounded-lg border border-zinc-700 px-3 py-2.5 text-sm disabled:opacity-40"
           }
