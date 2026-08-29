@@ -104,16 +104,16 @@ export function analyzeFrameBuffer(
 
   let guidance: CaptureGuidance = "READY";
 
-  if (brightness < 45) {
+  // Soft thresholds: guidance is advisory; Capture must stay usable on
+  // desktop webcams and uneven home lighting.
+  if (brightness < 30) {
     guidance = "LOW LIGHT";
-  } else if (blurScore < 40) {
+  } else if (blurScore < 18) {
     guidance = "TOO BLURRY";
-  } else if (bottleCoverage < 0.18) {
+  } else if (bottleCoverage < 0.10) {
     guidance = "MOVE CLOSER";
-  } else if (bottleCoverage > 0.82) {
+  } else if (bottleCoverage > 0.92) {
     guidance = "MOVE RIGHT";
-  } else if (blurScore < 70) {
-    guidance = "STRAIGHTEN";
   }
 
   return {

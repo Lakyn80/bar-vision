@@ -10,17 +10,73 @@ export type CameraStatus =
   | "error";
 
 
-async function getRearCameraStream(): Promise<MediaStream> {
-  const preferred = await navigator.mediaDevices.getUserMedia({
-    audio: false,
-    video: {
-      facingMode: { ideal: "environment" },
-      width: { ideal: 1280 },
-      height: { ideal: 1920 },
-    },
-  });
+async function getCameraStream(): Promise<MediaStream> {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    throw new DOMException(
+      "Camera API is not available in this browser.",
+      "NotSupportedError",
+    );
+  }
 
-  return preferred;
+  // Prefer rear camera on phones; fall back to any camera (desktop webcam).
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1280 },
+        height: { ideal: 1920 },
+      },
+    });
+  } catch {
+    return navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: true,
+    });
+  }
+}
+
+
+function describeCameraError(error: unknown): {
+  status: CameraStatus;
+  message: string;
+} {
+  if (error instanceof DOMException) {
+    if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
+      return {
+        status: "denied",
+        message: "Camera permission was denied. Allow camera access and try again.",
+      };
+    }
+    if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
+      return {
+        status: "unavailable",
+        message: "No camera device was found on this machine.",
+      };
+    }
+    if (error.name === "NotReadableError" || error.name === "TrackStartError") {
+      return {
+        status: "error",
+        message: "Camera is already in use by another application.",
+      };
+    }
+    if (error.name === "SecurityError") {
+      return {
+        status: "unavailable",
+        message:
+          "Camera requires a secure context (https:// or http://127.0.0.1).",
+      };
+    }
+    return {
+      status: "error",
+      message: `Unable to open the camera (${error.name}).`,
+    };
+  }
+
+  return {
+    status: "error",
+    message: "Unable to open the camera.",
+  };
 }
 
 
@@ -46,7 +102,22 @@ export function useCamera() {
   const startCamera = useCallback(async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
       setStatus("unavailable");
-      setErrorMessage("Camera API is not available in this browser.");
+      setErrorMessage(
+        "Camera API is not available. Use Chrome/Edge on http://127.0.0.1:18100.",
+      );
+      return;
+    }
+
+    if (
+      typeof window !== "undefined"
+      && !window.isSecureContext
+      && window.location.hostname !== "localhost"
+      && window.location.hostname !== "127.0.0.1"
+    ) {
+      setStatus("unavailable");
+      setErrorMessage(
+        "Camera blocked: open the app via http://127.0.0.1:18100 (secure context).",
+      );
       return;
     }
 
@@ -56,7 +127,7 @@ export function useCamera() {
     stopCamera();
 
     try {
-      const stream = await getRearCameraStream();
+      const stream = await getCameraStream();
       streamRef.current = stream;
 
       if (videoRef.current) {
@@ -67,15 +138,9 @@ export function useCamera() {
       setStatus("ready");
     } catch (error) {
       stopCamera();
-
-      if (error instanceof DOMException && error.name === "NotAllowedError") {
-        setStatus("denied");
-        setErrorMessage("Camera permission was denied.");
-        return;
-      }
-
-      setStatus("error");
-      setErrorMessage("Unable to open the camera.");
+      const described = describeCameraError(error);
+      setStatus(described.status);
+      setErrorMessage(described.message);
     }
   }, [stopCamera]);
 

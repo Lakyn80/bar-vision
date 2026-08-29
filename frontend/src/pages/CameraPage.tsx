@@ -27,7 +27,9 @@ export function CameraPage() {
   const [uploadState, setUploadState] = useState<string>("idle");
   const [uploadDetail, setUploadDetail] = useState<string | null>(null);
 
-  const canCapture = status === "ready" && guidance === "READY";
+  // Guidance is advisory — do not hard-block capture (desktop webcams rarely
+  // hit READY with the bottle heuristics).
+  const canCapture = status === "ready";
 
   const onUpload = async () => {
     if (!capturedDataUrl) {
@@ -92,12 +94,19 @@ export function CameraPage() {
           <div className="text-center font-mono text-lg tracking-wide">
             {capturedDataUrl ? "CAPTURED" : guidance}
           </div>
+          {!capturedDataUrl && status === "ready" && guidance !== "READY" ? (
+            <div className="mt-1 text-center text-xs text-amber-300">
+              Guidance is a hint — you can still Capture.
+            </div>
+          ) : null}
         </div>
       </section>
 
       <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm">
         <div className="text-zinc-500">Status</div>
         <div className="mt-1 font-mono">{status}</div>
+        <div className="mt-3 text-zinc-500">Guidance</div>
+        <div className="mt-1 font-mono">{guidance}</div>
         <div className="mt-3 text-zinc-500">Upload</div>
         <div className="mt-1 font-mono">{uploadState}</div>
         {uploadDetail ? (
@@ -123,7 +132,11 @@ export function CameraPage() {
           type="button"
           onClick={captureFrame}
           disabled={!canCapture || Boolean(capturedDataUrl)}
-          className="rounded-xl border border-zinc-700 px-4 py-3 text-sm disabled:opacity-40"
+          className={
+            canCapture && !capturedDataUrl
+              ? "rounded-xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-zinc-950"
+              : "rounded-xl border border-zinc-700 px-4 py-3 text-sm disabled:opacity-40"
+          }
         >
           Capture
         </button>
