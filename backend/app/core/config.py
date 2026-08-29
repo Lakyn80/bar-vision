@@ -27,6 +27,11 @@ class Settings(BaseSettings):
         validation_alias="S3_REGION",
     )
 
+    datasets_root: str = Field(
+        default="/datasets",
+        validation_alias="DATASETS_ROOT",
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

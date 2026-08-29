@@ -54,9 +54,11 @@ services:
       S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       S3_BUCKET: ${S3_BUCKET}
       S3_REGION: ${S3_REGION}
+      DATASETS_ROOT: /datasets
 
     volumes:
       - ./backend:/app
+      - ./datasets:/datasets:ro
 
     depends_on:
       postgres:

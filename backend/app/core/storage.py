@@ -146,3 +146,16 @@ def build_measurement_canonical_key(*, measurement_id: str) -> str:
 
 def build_measurement_debug_key(*, measurement_id: str) -> str:
     return f"measurements/{measurement_id}/debug.jpg"
+
+
+def build_calibration_image_key(
+    *,
+    bottle_profile_id: str,
+    calibration_version: str,
+    filename: str,
+) -> str:
+    safe_name = filename.replace("\\", "/").split("/")[-1]
+    return (
+        f"calibration/{bottle_profile_id}/"
+        f"{calibration_version}/{safe_name}"
+    )

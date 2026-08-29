@@ -1,0 +1,85 @@
+{
+  "dataset_id": "glass_500ml_v1",
+  "dataset_version": "v1",
+  "bottle_profile_key": "glass_500ml_v1",
+  "vessel": "glass",
+  "nominal_volume_ml": 500,
+  "step_ml": 62.5,
+  "calibration_method": "physical_measured_pour",
+  "notes": "Temporary first calibration vessel (0.5 L glass). No 0 ml capture. true_ml from measured 62.5 ml pours.",
+  "raw_dir": "raw/glass_500ml_v1",
+  "points": [
+    {
+      "true_ml": 62.5,
+      "image": "0062p5ml_01.jpg",
+      "capture_metadata": {
+        "capture_index": 1,
+        "source": "manual_phone",
+        "orientation": "upright"
+      }
+    },
+    {
+      "true_ml": 125,
+      "image": "0125ml_01.jpg",
+      "capture_metadata": {
+        "capture_index": 2,
+        "source": "manual_phone",
+        "orientation": "upright"
+      }
+    },
+    {
+      "true_ml": 187.5,
+      "image": "0187p5ml_01.jpg",
+      "capture_metadata": {
+        "capture_index": 3,
+        "source": "manual_phone",
+        "orientation": "upright"
+      }
+    },
+    {
+      "true_ml": 250,
+      "image": "0250ml_01.jpg",
+      "capture_metadata": {
+        "capture_index": 4,
+        "source": "manual_phone",
+        "orientation": "upright"
+      }
+    },
+    {
+      "true_ml": 312.5,
+      "image": "0312p5ml_01.jpg",
+      "capture_metadata": {
+        "capture_index": 5,
+        "source": "manual_phone",
+        "orientation": "upright"
+      }
+    },
+    {
+      "true_ml": 375,
+      "image": "0375ml_01.jpg",
+      "capture_metadata": {
+        "capture_index": 6,
+        "source": "manual_phone",
+        "orientation": "upright"
+      }
+    },
+    {
+      "true_ml": 437.5,
+      "image": "0437p5ml_01.jpg",
+      "capture_metadata": {
+        "capture_index": 7,
+        "source": "manual_phone",
+        "orientation": "upright"
+      }
+    },
+    {
+      "true_ml": 500,
+      "image": "0500ml_01.jpg",
+      "capture_metadata": {
+        "capture_index": 8,
+        "source": "manual_phone",
+        "orientation": "upright"
+      }
+    }
+  ]
+}

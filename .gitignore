@@ -20,6 +20,13 @@ dev-dist/
 backend/rum_test.png
 backend/rum_test.jpg
 
+# Calibration raw binaries stay local; manifests/annotations are versioned.
+datasets/raw/**/*.jpg
+datasets/raw/**/*.jpeg
+datasets/raw/**/*.png
+datasets/raw/**/*.webp
+!datasets/raw/**/manifest.json
+
 *.log
 .DS_Store
 Thumbs.db
