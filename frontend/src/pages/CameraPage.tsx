@@ -27,8 +27,6 @@ export function CameraPage() {
   const [uploadState, setUploadState] = useState<string>("idle");
   const [uploadDetail, setUploadDetail] = useState<string | null>(null);
 
-  // Guidance is advisory — do not hard-block capture (desktop webcams rarely
-  // hit READY with the bottle heuristics).
   const canCapture = status === "ready";
 
   const onUpload = async () => {
@@ -54,27 +52,24 @@ export function CameraPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-4 bg-zinc-950 p-4 text-white">
-      <header className="flex items-center justify-between gap-3">
+    <main className="mx-auto flex h-[100dvh] w-full max-w-lg flex-col gap-2 overflow-hidden bg-zinc-950 p-3 text-white">
+      <header className="flex shrink-0 items-center justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-semibold">Camera</h1>
-          <p className="text-sm text-zinc-400">
-            Put the glass inside the green outline, then Capture.
+          <h1 className="text-lg font-semibold">Camera</h1>
+          <p className="text-xs text-zinc-400">
+            Fit the glass in the green outline, then Capture.
           </p>
         </div>
-
-        <Link
-          to="/"
-          className="text-sm text-zinc-300 underline"
-        >
+        <Link to="/" className="text-xs text-zinc-300 underline">
           Home
         </Link>
       </header>
 
-      <section className="relative aspect-[3/4] overflow-hidden rounded-2xl border border-zinc-800 bg-black">
+      {/* Hard cap so preview never taller than ~half the viewport */}
+      <section className="relative mx-auto aspect-[3/4] h-[min(48dvh,380px)] w-auto max-w-full shrink-0 overflow-hidden rounded-xl border border-zinc-800 bg-black">
         <video
           ref={videoRef}
-          className="h-full w-full object-contain"
+          className="absolute inset-0 h-full w-full object-cover"
           playsInline
           muted
           autoPlay
@@ -86,44 +81,38 @@ export function CameraPage() {
           <img
             src={capturedDataUrl}
             alt="Captured glass frame"
-            className="absolute inset-0 h-full w-full object-contain bg-black"
+            className="absolute inset-0 h-full w-full object-cover"
           />
         ) : null}
 
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-4">
-          <div className="text-center font-mono text-lg tracking-wide">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-2 py-2">
+          <div className="text-center font-mono text-sm tracking-wide">
             {capturedDataUrl ? "CAPTURED" : guidance}
-          </div>
-          <div className="mt-1 text-center text-xs text-zinc-300">
-            {capturedDataUrl
-              ? "Use Upload draft or Retake."
-              : "Green outline = target. Capture works even if guidance is not READY."}
           </div>
         </div>
       </section>
 
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm">
-        <div className="text-zinc-500">Status</div>
-        <div className="mt-1 font-mono">{status}</div>
-        <div className="mt-3 text-zinc-500">Guidance</div>
-        <div className="mt-1 font-mono">{guidance}</div>
-        <div className="mt-3 text-zinc-500">Upload</div>
-        <div className="mt-1 font-mono">{uploadState}</div>
+      <div className="shrink-0 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono">
+          <span>cam:{status}</span>
+          <span>guide:{guidance}</span>
+          <span>up:{uploadState}</span>
+        </div>
         {uploadDetail ? (
-          <div className="mt-2 break-all text-zinc-400">{uploadDetail}</div>
+          <div className="mt-1 break-all text-zinc-400">{uploadDetail}</div>
         ) : null}
         {errorMessage ? (
-          <div className="mt-2 text-red-400">{errorMessage}</div>
+          <div className="mt-1 text-red-400">{errorMessage}</div>
         ) : null}
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex shrink-0 flex-wrap gap-2">
         <button
           type="button"
           onClick={() => {
             void startCamera();
           }}
-          className="rounded-xl bg-white px-4 py-3 text-sm font-medium text-zinc-950"
+          className="rounded-lg bg-white px-3 py-2 text-xs font-medium text-zinc-950"
         >
           Open camera
         </button>
@@ -134,8 +123,8 @@ export function CameraPage() {
           disabled={!canCapture || Boolean(capturedDataUrl)}
           className={
             canCapture && !capturedDataUrl
-              ? "rounded-xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-zinc-950"
-              : "rounded-xl border border-zinc-700 px-4 py-3 text-sm disabled:opacity-40"
+              ? "rounded-lg bg-emerald-400 px-3 py-2 text-xs font-semibold text-zinc-950"
+              : "rounded-lg border border-zinc-700 px-3 py-2 text-xs disabled:opacity-40"
           }
         >
           Capture
@@ -147,9 +136,9 @@ export function CameraPage() {
             void onUpload();
           }}
           disabled={!capturedDataUrl || uploadState === "uploading"}
-          className="rounded-xl border border-zinc-700 px-4 py-3 text-sm disabled:opacity-40"
+          className="rounded-lg border border-zinc-700 px-3 py-2 text-xs disabled:opacity-40"
         >
-          Upload draft
+          Upload
         </button>
 
         <button
@@ -160,7 +149,7 @@ export function CameraPage() {
             setUploadDetail(null);
           }}
           disabled={!capturedDataUrl}
-          className="rounded-xl border border-zinc-700 px-4 py-3 text-sm disabled:opacity-40"
+          className="rounded-lg border border-zinc-700 px-3 py-2 text-xs disabled:opacity-40"
         >
           Retake
         </button>
@@ -168,7 +157,7 @@ export function CameraPage() {
         <button
           type="button"
           onClick={stopCamera}
-          className="rounded-xl border border-zinc-700 px-4 py-3 text-sm"
+          className="rounded-lg border border-zinc-700 px-3 py-2 text-xs"
         >
           Stop
         </button>
